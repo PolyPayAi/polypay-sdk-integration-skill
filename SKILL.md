@@ -1,201 +1,86 @@
 ---
-name: ponponpay-sdk-integration
-description: Integrate PolyPay / PonponPay payments, hosted checkout, SDKs, webhooks, x402, and Notification Center features into an existing application. Use when a user asks to add PolyPay payment acceptance, JavaScript SDK, PHP SDK, API Key Mode, Public Key Mode, webhook verification, WHMCS or WordPress payment flows, wallet transaction notifications, or bilingual notification templates.
+name: polypay-sdk-integration
+description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows. Also trigger for legacy PonponPay integration requests.
 ---
 
-# PolyPay SDK Integration
+# PolyPay Production Integration
 
-Use this skill to integrate PolyPay payment and notification features into an existing codebase with minimal, idiomatic changes.
+Integrate the smallest complete PolyPay flow that matches the host application. Preserve existing architecture and prove the result without exposing credentials or charging real funds by default.
 
-## Product Names
+## Resolve the Integration Mode
 
-- Public-facing brand: PolyPay.
-- Repository and legacy package names may still use PonponPay.
-- Do not rename existing project identifiers unless the user explicitly asks.
+Inspect the host framework, runtime, order model, existing payment abstraction, callback routes, package manager, and test commands before editing.
 
-## Core Rules
+Treat these references as a tested capability snapshot. Before coding against a mutable API, compare them with the installed package types and current official PolyPay documentation. Prefer, in order: the target application's locked dependency types, current official documentation, then this Skill's references. If they conflict, follow the newer authoritative contract and report the Skill drift instead of guessing.
 
-- Prefer hosted checkout for merchant checkout flows.
-- Do not build a merchant-side payment-method selection page by default.
-- Treat webhook verification as the source of truth for paid status.
-- Never put an API Key in browser code, mobile client code, logs, or committed files.
-- Public Key Mode is allowed in frontend code only when the merchant has configured the allowed domain.
-- Add `.env.example` entries for required variables, but never write real secrets.
-- Keep edits aligned with the host project structure, router, state management, styling, and validation tools.
-- Run the available typecheck, build, lint, or test commands after changes.
+Choose one primary mode:
 
-## Integration Modes
+- Use hosted checkout for normal customer payments. Let PolyPay own payment-method selection unless the merchant already knows both currency and network.
+- Use `@polypay/sdk/browser` for browser checkout with a Public Key and server-generated signed parameters.
+- Use `polypay/php-sdk` for PHP server-side hosted checkout, direct orders, status queries, webhook verification, and x402.
+- Use PolyPay REST endpoints for ordinary Node.js server-side API Key order operations. Do not initialize `PolyPayClient` with an API Key; that client is browser-only and accepts a Public Key.
+- Use `@polypay/sdk/x402` only for server-side JavaScript/TypeScript x402 resources.
+- Reuse the official platform plugin or its conventions for WordPress, WooCommerce, WHMCS, or Shopify.
+- Use PolyPay MCP when the user wants an AI client to operate merchant resources rather than embed checkout code.
 
-### Frontend / Public Key Mode
+## Load Only the Required References
 
-Use this for browser-only checkout initiation.
+- Read [references/checkout.md](references/checkout.md) for hosted checkout, Public Key, API Key, direct-order, locale, and sandbox flows.
+- Read [references/webhooks.md](references/webhooks.md) whenever payment state changes local data.
+- Read [references/x402.md](references/x402.md) for paid API or Agent resource requests.
+- Read [references/notifications.md](references/notifications.md) for channels, templates, delivery, or wallet events.
+- Read [references/mcp.md](references/mcp.md) for AI-client access to merchant tools.
+- Read [references/platforms.md](references/platforms.md) for framework and commerce-platform constraints.
 
-- Install `@polypay/sdk` if the project uses npm, pnpm, yarn, or bun.
-- Read the public key from a public env var such as `NEXT_PUBLIC_POLYPAY_PUBLIC_KEY`.
-- Create a hosted checkout session or URL through the JavaScript SDK.
-- Redirect users to `https://checkout.polypay.ai/{locale}/checkout` or the hosted URL returned by the SDK/API.
-- Do not expose API Key Mode from frontend code.
+Read every reference relevant to the request before implementation. Do not load unrelated references.
 
-### Server / API Key Mode
+## Enforce Production Safety
 
-Use this for trusted server-side order creation, webhook verification, and status reconciliation.
+- Keep API Keys in server-only secret storage. Never place them in browser code, mobile code, URLs, logs, examples with real values, or committed files.
+- Allow Public Keys in browser code only after the merchant configures the exact allowed domains.
+- Generate hosted-checkout signatures on a trusted server and pass signed parameters to the browser. Never invent or omit the required signature.
+- Treat verified webhooks or an authenticated server-side reconciliation query as the source of truth. Never mark an order paid from a redirect, popup close, client poll result alone, or Agent message.
+- Make webhook handling and fulfillment idempotent using stable event, trade, merchant-order, transaction, or nonce identifiers.
+- Use Sandbox first for checkout and order flows. Use mocks and protocol test vectors for x402 until the user explicitly authorizes a low-value production settlement. Do not perform a production charge, settlement, webhook resend, or external write without that authorization.
+- Preserve the platform trade ID and merchant order ID mapping.
+- Validate callback and redirect URLs, use HTTPS in production, and avoid open redirects.
+- Keep x402 settlement and merchant API Keys out of public bundles.
 
-- PHP projects should use `polypay/php-sdk` when Composer is available.
-- JavaScript/TypeScript server projects should keep the API Key in server-only env vars.
-- Create direct orders only when the server already knows the required `currency` and `network`.
-- Otherwise request a hosted checkout URL and let PolyPay collect the payment method details.
-- Persist the platform trade/order id and merchant order id mapping.
+## Implement the Complete Slice
 
-### Webhooks
+1. Confirm the selected integration mode and required identifiers.
+2. Add only the required dependency and environment-variable names.
+3. Implement order or checkout creation, redirect, and error handling.
+4. Implement verified, replay-resistant, idempotent payment-state handling when local state changes.
+5. Reconcile ambiguous or delayed states through an authenticated server-side query.
+6. Preserve localized user-facing copy and the host application's existing patterns.
+7. Add focused tests for success, invalid signature, duplicate delivery, expired order, and missing configuration where applicable.
+8. Run the repository's typecheck, tests, lint, or build commands that cover the changed paths.
 
-Add a webhook endpoint when payment state changes matter to the host application.
+## Require Release Evidence
 
-- Verify the webhook signature before changing local order state.
-- Make the handler idempotent by checking event id, trade id, or merchant order id.
-- Update paid/cancelled/expired state only after verification succeeds.
-- Return a 2xx response only after the event has been accepted.
-- Log useful diagnostic context without logging secrets.
+Before reporting completion, verify as many of these as the environment permits:
 
-## Notification Center
+- A Sandbox order or hosted-checkout URL is created with the expected merchant order ID.
+- The default checkout URL is locale-neutral; an explicit locale produces a localized path.
+- No secret appears in generated client assets, source control, logs, or returned URLs.
+- A valid webhook changes state exactly once, while invalid, expired, or replayed signatures do not.
+- Redirect success without verified payment does not mark the order paid.
+- x402 returns HTTP 402 before payment and protected content only after successful verification and settlement.
+- Required checks pass and the manual verification path is documented.
 
-Use Notification Center when the user asks for Telegram, WhatsApp, WeCom, browser push, in-app, wallet transaction, webhook failure, x402, order, or subscription notifications.
+If credentials or a running environment are unavailable, complete static validation and report the exact unverified runtime steps. Do not claim end-to-end success without evidence.
 
-### Template Model
-
-Notification templates are scoped by:
-
-- merchant id
-- environment
-- channel type
-- notification type
-- locale
-
-Supported template locales:
-
-- `en`
-- `zh`
-
-Status values:
-
-- `1` means enabled
-- `2` means disabled
-
-When toggling a template status, update only the `status` field and preserve the merchant's current `title_template` and `content_template`.
-
-### Event Types
-
-Use these event type ids:
-
-- `order_paid`
-- `order_expired`
-- `order_cancelled`
-- `webhook_failed`
-- `x402_payment`
-- `wallet_transaction`
-- `subscription_expiring`
-- `subscription_expired`
-
-### Wallet Transaction Templates
-
-Use `wallet_transaction` for wallet income and expense notifications.
-
-Common variables:
-
-- `cash_flow`: localized income/expense text
-- `amount`
-- `token`
-- `network`
-- `address_from`
-- `address_from_short`
-- `address_from_link`
-- `address_to`
-- `address_to_short`
-- `address_to_link`
-- `transaction_hash`
-- `transaction_hash_short`
-- `transaction_hash_link`
-- `block_time`
-- `note`
-
-English default:
-
-```text
-Wallet {{cash_flow}}
-✅✅✅ #{{cash_flow}}
-Amount: {{amount}} {{token}}
-From: {{address_from}}
-To: {{address_to}}
-Tx Hash: {{transaction_hash}}
-Time: {{block_time}}
-On-chain note: {{note}}
-```
-
-Chinese default:
-
-```text
-钱包{{cash_flow}}
-✅✅✅ #{{cash_flow}}
-支付金额：{{amount}} {{token}}
-发出地址：{{address_from}}
-接收地址：{{address_to}}
-交易Hash：{{transaction_hash}}
-交易时间：{{block_time}}
-链上转账备注：{{note}}
-```
-
-### Template UI Expectations
-
-If adding or modifying a template management page:
-
-- Include a language selector for `en` and `zh`.
-- List templates for the selected language only.
-- Show status as an action button, not static text.
-- Clicking the status button toggles enabled/disabled.
-- Keep edit and delete actions separate from status toggling.
-- Preview should render with the selected locale.
-- Use localized labels for event names, channel names, language names, enabled, and disabled.
-
-## Platform-Specific Guidance
-
-### Next.js / React
-
-- Keep SDK calls that need API keys in route handlers or server actions.
-- Use `NEXT_PUBLIC_` only for Public Key Mode values.
-- Keep checkout redirects in user-triggered flows.
-- Use existing UI components and i18n patterns.
-
-### PHP / Laravel
-
-- Use Composer when available.
-- Keep API keys in `.env`.
-- Put webhook verification in a controller or route that bypasses CSRF only for the webhook path.
-- Use existing order models and transaction boundaries.
-
-### WordPress / WHMCS
-
-- Store merchant configuration in the platform's settings system.
-- Do not hardcode API endpoints, API keys, or merchant credentials.
-- Preserve existing hook and template conventions.
-- Clear WHMCS `templates_c/` after template/config changes if rendering does not update.
-
-## Implementation Checklist
-
-1. Identify the host framework and package manager.
-2. Locate existing order/payment/webhook abstractions.
-3. Choose Public Key Mode, API Key Mode, or hosted checkout based on the security boundary.
-4. Add env examples without real secrets.
-5. Implement checkout creation and redirect.
-6. Implement webhook verification and idempotent order updates.
-7. Add Notification Center templates/channels only if requested.
-8. Add or update bilingual copy for user-facing UI.
-9. Run the repository's validation commands.
-10. Report changed files, required env vars, and manual test steps.
-
-## Refuse Or Escalate
+## Stop and Escalate
 
 Stop and ask for direction when:
 
-- The user wants API keys committed to source control.
-- The requested flow requires browser-side API Key usage.
-- The host project lacks enough order identifiers to reconcile webhooks safely.
-- Payment status would be marked paid from frontend redirects without webhook verification.
+- The requested design exposes an API Key or settlement capability to an untrusted client.
+- The host lacks a stable merchant order identifier or a safe idempotency boundary.
+- The user wants client redirects to be the paid-state authority.
+- The requested currency, network, x402 scheme, or platform capability is not supported by the current reference.
+- Completing the task requires a real production payment or a new external credential not provided by the user.
+
+## Report the Result
+
+Report the selected mode, changed files, dependencies, environment-variable names, tests run, manual Sandbox path, and any remaining production verification. Never print credential values.
