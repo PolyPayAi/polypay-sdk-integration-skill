@@ -1,0 +1,4 @@
+interface:
+  display_name: "PolyPay Production Integration"
+  short_description: "Build and verify production-grade PolyPay integrations"
+  default_prompt: "Use $polypay-sdk-integration to integrate PolyPay safely into this application and verify the Sandbox flow."
