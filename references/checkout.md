@@ -28,13 +28,28 @@ The JavaScript SDK requires `signature`; never substitute a placeholder in finis
 
 Keep the API Key in a server-only environment variable. For PHP, prefer the SDK rather than hand-written HTTP. For Node.js, call the documented REST API because the browser client is not a general API Key client.
 
-Use these API Key endpoints when direct REST access is necessary:
+Use the canonical merchant endpoints for new server integrations:
 
-- `POST /api/v1/pay/sdk/order/checkout` for a signed hosted checkout URL.
-- `POST /api/v1/pay/sdk/order/add` for a direct order when currency and network are known.
-- `POST /api/v1/pay/sdk/order/detail` for authenticated reconciliation.
+- `POST /api/v1/pay/order/checkout` for a signed hosted checkout URL.
+- `POST /api/v1/pay/order/add` for a direct order when currency and network are known.
+- `POST /api/v1/pay/order/detail` for authenticated reconciliation.
+- `POST /api/v1/pay/order/cancel-by-trade-id` for cancelling a pending order precisely by its PolyPay trade ID. The legacy API Key compatibility path is `POST /api/v1/pay/sdk/order/cancel-by-trade-id`.
 
 Authenticate server REST requests with `X-API-Key`. Preserve the returned `trade_id`, `payment_url`, merchant order ID, and expiry data in the host application's existing order model.
+
+The canonical merchant business endpoints under `/api/v1/pay` accept either a merchant dashboard JWT or an API Key. Use `Authorization: Bearer <jwt>` for an interactive merchant dashboard session and `X-API-Key: <key>` for trusted server automation. Account identity and security operations remain JWT-only. The explicit `/api/v1/pay/sdk/...` API Key routes are legacy compatibility aliases; preserve them in existing integrations, but do not select them for new integrations when a canonical merchant endpoint exists.
+
+## Synchronize Local Cancellations
+
+Treat cancellation as part of the payment lifecycle, not as a local-only status change.
+
+1. Preserve the mapping from the host order or payment attempt to PolyPay `trade_id`.
+2. When the host cancels, voids, or replaces an unpaid attempt, call `POST /api/v1/pay/order/cancel-by-trade-id` from the trusted server with `X-API-Key` and `{"trade_id":"..."}`.
+3. Prefer `trade_id` cancellation over matching by merchant order ID and amount because it identifies one payment attempt exactly.
+4. Cancel only pending orders. If payment confirmation races with cancellation, preserve the verified paid state and continue the normal fulfillment or refund workflow instead of forcing cancelled locally.
+5. If the cancellation response is lost, retried, or reports that the state already changed, query order detail and treat a remote cancelled state as converged, a paid state as authoritative, and an expired state as terminal.
+
+PolyPay allocates an exact receiving wallet and payable amount to a pending order. If the host cancels only its local order, the obsolete PolyPay order can remain payable and its allocation can remain occupied until expiry. A later order for the same amount may therefore receive an adjusted payable amount; for stablecoin payments this is commonly an additional `0.01`, but the increment is configuration- and currency-dependent. Do not promise customers that the requested and payable amounts will always match.
 
 ## Use Sandbox First
 
@@ -43,6 +58,7 @@ Authenticate server REST requests with `X-API-Key`. Preserve the returned `trade
 - Configure a Sandbox webhook separately.
 - Create an order and simulate payment states in the merchant dashboard.
 - Test paid, expired, cancelled, invalid callback, and duplicate callback paths.
+- Cancel an unpaid order through the API, then create another same-currency, same-network, same-amount order and verify that the cancelled order does not leave a stale allocation that changes the new payable amount.
 - Never copy a Sandbox key into browser code.
 
 Browser Public Key Mode is intended for production checkout. Prefer API Key Sandbox flows for repeatable integration tests.
@@ -52,5 +68,6 @@ Browser Public Key Mode is intended for production checkout. Prefer API Key Sand
 - Require a unique merchant order ID no longer than the product limit.
 - Validate amount, URLs, currency, and network before calling PolyPay.
 - Prevent duplicate checkout creation for the same logical attempt unless retry behavior is intentional.
+- Synchronize local cancellation, void, and replacement events for unpaid attempts through the PolyPay cancellation API.
 - Store amounts with decimal-safe types.
 - Do not treat polling or redirect results as authoritative paid state.
