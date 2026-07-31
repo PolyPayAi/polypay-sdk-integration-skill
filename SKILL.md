@@ -1,6 +1,6 @@
 ---
 name: polypay-sdk-integration
-description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows. Also trigger for legacy PonponPay integration requests.
+description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, order cancellation or void synchronization, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows. Also trigger for legacy PonponPay integration requests.
 ---
 
 # PolyPay Production Integration
@@ -18,7 +18,7 @@ Choose one primary mode:
 - Use hosted checkout for normal customer payments. Let PolyPay own payment-method selection unless the merchant already knows both currency and network.
 - Use `@polypay/sdk/browser` for browser checkout with a Public Key and server-generated signed parameters.
 - Use `polypay/php-sdk` for PHP server-side hosted checkout, direct orders, status queries, webhook verification, and x402.
-- Use PolyPay REST endpoints for ordinary Node.js server-side API Key order operations. Do not initialize `PolyPayClient` with an API Key; that client is browser-only and accepts a Public Key.
+- Use PolyPay's canonical merchant REST endpoints with a server-only API Key for ordinary Node.js order operations. Treat `/api/v1/pay/sdk/...` routes as legacy compatibility aliases rather than the default for new integrations. Do not initialize `PolyPayClient` with an API Key; that client is browser-only and accepts a Public Key.
 - Use `@polypay/sdk/x402` only for server-side JavaScript/TypeScript x402 resources.
 - Reuse the official platform plugin or its conventions for WordPress, WooCommerce, WHMCS, or Shopify.
 - Use PolyPay MCP when the user wants an AI client to operate merchant resources rather than embed checkout code.
@@ -43,6 +43,7 @@ Read every reference relevant to the request before implementation. Do not load 
 - Make webhook handling and fulfillment idempotent using stable event, trade, merchant-order, transaction, or nonce identifiers.
 - Use Sandbox first for checkout and order flows. Use mocks and protocol test vectors for x402 until the user explicitly authorizes a low-value production settlement. Do not perform a production charge, settlement, webhook resend, or external write without that authorization.
 - Preserve the platform trade ID and merchant order ID mapping.
+- When the host platform cancels, voids, or replaces an unpaid payment attempt, synchronize that transition through PolyPay's server-side cancellation API. Reconcile ambiguous responses before retrying, and never overwrite a paid state with a local cancellation.
 - Validate callback and redirect URLs, use HTTPS in production, and avoid open redirects.
 - Keep x402 settlement and merchant API Keys out of public bundles.
 
@@ -51,17 +52,19 @@ Read every reference relevant to the request before implementation. Do not load 
 1. Confirm the selected integration mode and required identifiers.
 2. Add only the required dependency and environment-variable names.
 3. Implement order or checkout creation, redirect, and error handling.
-4. Implement verified, replay-resistant, idempotent payment-state handling when local state changes.
-5. Reconcile ambiguous or delayed states through an authenticated server-side query.
-6. Preserve localized user-facing copy and the host application's existing patterns.
-7. Add focused tests for success, invalid signature, duplicate delivery, expired order, and missing configuration where applicable.
-8. Run the repository's typecheck, tests, lint, or build commands that cover the changed paths.
+4. Implement server-side cancellation synchronization for unpaid attempts when the host can cancel, void, or replace an order.
+5. Implement verified, replay-resistant, idempotent payment-state handling when local state changes.
+6. Reconcile ambiguous or delayed states through an authenticated server-side query.
+7. Preserve localized user-facing copy and the host application's existing patterns.
+8. Add focused tests for success, cancellation races, invalid signature, duplicate delivery, expired order, and missing configuration where applicable.
+9. Run the repository's typecheck, tests, lint, or build commands that cover the changed paths.
 
 ## Require Release Evidence
 
 Before reporting completion, verify as many of these as the environment permits:
 
 - A Sandbox order or hosted-checkout URL is created with the expected merchant order ID.
+- Cancelling an unpaid attempt converges both systems to cancelled, and creating another same-amount attempt is not changed solely by a stale allocation from the cancelled order.
 - The default checkout URL is locale-neutral; an explicit locale produces a localized path.
 - No secret appears in generated client assets, source control, logs, or returned URLs.
 - A valid webhook changes state exactly once, while invalid, expired, or replayed signatures do not.
