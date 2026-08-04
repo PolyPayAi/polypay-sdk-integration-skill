@@ -39,5 +39,8 @@ Wallet templates support linked and shortened address and transaction fields, ad
 
 - Keep event emission idempotent where repeated upstream events are possible.
 - Inspect delivery logs before retrying.
+- Retry Telegram automatically only when the request is known to be replay-safe: DNS or connection failure before the request is written, HTTP 408, HTTP 429 (honoring `retry_after`), or HTTP 5xx.
+- Do not automatically retry Telegram after the request was written but no response was confirmed, or after a successful response could not be read or parsed. Record these outcomes as `uncertain` for manual review because `sendMessage` has no client idempotency key.
+- Treat permanent Telegram HTTP 4xx responses as failed without automatic retry.
 - Avoid automatic retry loops that duplicate downstream messages.
 - Respect environment separation, quotas, channel status, template status, and system-managed events.
