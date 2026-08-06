@@ -37,6 +37,7 @@ Read every reference relevant to the request before implementation. Do not load 
 ## Enforce Production Safety
 
 - Keep API Keys in server-only secret storage. Never place them in browser code, mobile code, URLs, logs, examples with real values, or committed files.
+- Prefer API-key-independent Ed25519 Webhook v2 verification for new integrations. Keep legacy API Key HMAC verification only when preserving an existing integration, and never downgrade from failed v2 verification to v1.
 - Allow Public Keys in browser code only after the merchant configures the exact allowed domains.
 - Generate hosted-checkout signatures on a trusted server and pass signed parameters to the browser. Never invent or omit the required signature.
 - Treat verified webhooks or an authenticated server-side reconciliation query as the source of truth. Never mark an order paid from a redirect, popup close, client poll result alone, or Agent message.
