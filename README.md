@@ -21,7 +21,7 @@ The Skill inspects the target application's runtime, payment architecture, order
 - Notification Center events, templates, and delivery channels
 - Least-privilege PolyPay MCP access
 - WordPress, WooCommerce, WHMCS, and Shopify payment flows
-- Legacy PonponPay integrations that need to migrate or remain compatible
+- Existing PolyPay integrations that need to migrate or remain compatible
 
 ### Install
 
@@ -108,7 +108,7 @@ The Agent loads only the references needed for the requested integration. When i
 - Webhook 原始正文验签、时间窗口、防重放和幂等履约
 - Sandbox 验证以及成功、失败、过期、重复回调等测试
 - x402 付费 API、通知中心、MCP 和电商平台插件接入
-- WordPress、WooCommerce、WHMCS、Shopify 及旧 PonponPay 兼容场景
+- WordPress、WooCommerce、WHMCS、Shopify 及 PolyPay 兼容场景
 
 ### 安装与使用
 

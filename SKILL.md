@@ -1,6 +1,6 @@
 ---
 name: polypay-sdk-integration
-description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, order cancellation or void synchronization, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows. Also trigger for legacy PonponPay integration requests.
+description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, order cancellation or void synchronization, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows.
 ---
 
 # PolyPay Production Integration
