@@ -1,6 +1,6 @@
 ---
 name: polypay-sdk-integration
-description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use when Codex needs to add or repair PolyPay hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, order cancellation or void synchronization, webhook verification, sandbox testing, x402 agent payments, Notification Center channels or templates, PolyPay MCP access, or WordPress, WooCommerce, WHMCS, and Shopify payment flows. Also trigger for legacy PonponPay integration requests.
+description: Integrate PolyPay payment acceptance and merchant automation into production applications. Use for native Android or iOS checkout UI, hosted checkout, JavaScript browser checkout, PHP SDK or server REST API integration, cancellation, webhook verification, sandbox testing, x402, notifications, MCP, or commerce-platform payment flows.
 ---
 
 # PolyPay Production Integration
@@ -15,6 +15,7 @@ Treat these references as a tested capability snapshot. Before coding against a 
 
 Choose one primary mode:
 
+- When the user explicitly requests native Android or iOS pages, use the PolyPay native SDK for that platform. It renders payment-method selection and the payment page locally from a server-created `/pay/{tradeId}` checkout URL; do not substitute the React Native browser-opener package or a checkout WebView.
 - Use hosted checkout for normal customer payments. Let PolyPay own payment-method selection unless the merchant already knows both currency and network.
 - Use `@polypay/sdk/browser` for browser checkout with a Public Key and server-generated signed parameters.
 - Use `polypay/php-sdk` for PHP server-side hosted checkout, direct orders, status queries, webhook verification, and x402.
