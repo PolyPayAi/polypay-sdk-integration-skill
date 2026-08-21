@@ -43,10 +43,10 @@ Use `PolyPayAi/android-sdk` for Kotlin/Android and `PolyPayAi/ios-sdk` for Swift
 
 1. The merchant server calls `POST /api/v1/pay/order/checkout` with its server-only API Key and omits both `currency` and `network`.
 2. Give the app only the returned HTTPS `checkout_url`, which must point to `/pay/{tradeId}` on an exact allowlisted checkout host.
-3. The SDK uses public checkout-scoped endpoints to read the placeholder, load enabled payment methods, submit the selected currency/network, display the exact amount/address/QR code, and observe confirmation state.
+3. The SDK uses public checkout-scoped endpoints to read the placeholder, load enabled payment methods, submit the selected currency/network, display exact payment details, and observe confirmation state. Android uses server-locked wallet parameters to open compatible EVM wallets and provides explicit address/amount copy actions; iOS currently retains its address QR and copy flow.
 4. Android returns a `PolyPayCheckoutResult`; iOS emits a `PolyPayCheckoutOutcome`. Neither contract contains a `paid` outcome. Reconcile the trade ID on the merchant server before fulfillment.
 
-Do not use the browser Public Key/Origin token flow in a native app, expose an API Key, or accept arbitrary API/checkout hosts. Address QR codes contain the address only because many wallets do not support parameterized payment URIs consistently.
+Do not use the browser Public Key/Origin token flow in a native app, expose an API Key, or accept arbitrary API/checkout hosts. Never invent a payment URI for an unsupported network: use explicit manual address, amount, and network copy actions until a compatible native signing integration exists.
 
 The canonical merchant business endpoints under `/api/v1/pay` accept either a merchant dashboard JWT or an API Key. Use `Authorization: Bearer <jwt>` for an interactive merchant dashboard session and `X-API-Key: <key>` for trusted server automation. Account identity and security operations remain JWT-only. The explicit `/api/v1/pay/sdk/...` API Key routes are legacy compatibility aliases; preserve them in existing integrations, but do not select them for new integrations when a canonical merchant endpoint exists.
 
