@@ -45,7 +45,7 @@ Read every reference relevant to the request before implementation. Do not load 
 - Make webhook handling and fulfillment idempotent using stable event, trade, merchant-order, transaction, or nonce identifiers.
 - Use Sandbox first for checkout and order flows. Use mocks and protocol test vectors for x402 until the user explicitly authorizes a low-value production settlement. Do not perform a production charge, settlement, webhook resend, or external write without that authorization.
 - Preserve the platform trade ID and merchant order ID mapping.
-- When the host platform cancels, voids, or replaces an unpaid payment attempt, synchronize that transition through PolyPay's server-side cancellation API. Reconcile ambiguous responses before retrying, and never overwrite a paid state with a local cancellation.
+- When the host platform cancels, voids, or replaces an unpaid payment attempt, synchronize that transition through PolyPay's canonical server-side `/order/cancel` API. Prefer `trade_id` because it identifies a PolyPay payment attempt precisely; use `mch_order_id` when the platform trade ID is unavailable. Reconcile ambiguous responses before retrying, and never overwrite a paid state with a local cancellation.
 - Validate callback and redirect URLs, use HTTPS in production, and avoid open redirects.
 - Keep x402 settlement and merchant API Keys out of public bundles.
 

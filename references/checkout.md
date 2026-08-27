@@ -32,8 +32,10 @@ Use the canonical merchant endpoints for new server integrations:
 
 - `POST /api/v1/pay/order/checkout` for a signed hosted checkout URL.
 - `POST /api/v1/pay/order/add` for a direct order when currency and network are known.
-- `POST /api/v1/pay/order/detail` for authenticated reconciliation.
-- `POST /api/v1/pay/order/cancel-by-trade-id` for cancelling a pending order precisely by its PolyPay trade ID. The legacy API Key compatibility path is `POST /api/v1/pay/sdk/order/cancel-by-trade-id`.
+- `POST /api/v1/pay/order/detail` for authenticated reconciliation. Provide at least one of `trade_id` or `mch_order_id`; when both are present, `trade_id` takes precedence.
+- `POST /api/v1/pay/order/cancel` for cancelling a pending order. Provide at least one of `trade_id` or `mch_order_id`; when both are present, `trade_id` takes precedence. The API Key compatibility path is `POST /api/v1/pay/sdk/order/cancel`.
+
+The legacy `POST /api/v1/pay/order/cancel-by-trade-id` and `/api/v1/pay/sdk/order/cancel-by-trade-id` paths remain available for existing integrations. Do not select them for new integrations.
 
 Authenticate server REST requests with `X-API-Key`. Preserve the returned `trade_id`, `payment_url`, merchant order ID, and expiry data in the host application's existing order model.
 
@@ -54,9 +56,9 @@ The canonical merchant business endpoints under `/api/v1/pay` accept either a me
 
 Treat cancellation as part of the payment lifecycle, not as a local-only status change.
 
-1. Preserve the mapping from the host order or payment attempt to PolyPay `trade_id`.
-2. When the host cancels, voids, or replaces an unpaid attempt, call `POST /api/v1/pay/order/cancel-by-trade-id` from the trusted server with `X-API-Key` and `{"trade_id":"..."}`.
-3. Prefer `trade_id` cancellation over matching by merchant order ID and amount because it identifies one payment attempt exactly.
+1. Preserve the mapping from the host order or payment attempt to PolyPay `trade_id` and `mch_order_id`.
+2. When the host cancels, voids, or replaces an unpaid attempt, call `POST /api/v1/pay/order/cancel` from the trusted server with `X-API-Key` and either `{"trade_id":"..."}` or `{"mch_order_id":"..."}`. Do not send `actual_amount`; cancellation no longer uses an amount to locate the order.
+3. Prefer `trade_id` because it identifies one PolyPay payment attempt precisely. Use `mch_order_id` when the host does not have the PolyPay trade ID.
 4. Cancel only pending orders. If payment confirmation races with cancellation, preserve the verified paid state and continue the normal fulfillment or refund workflow instead of forcing cancelled locally.
 5. If the cancellation response is lost, retried, or reports that the state already changed, query order detail and treat a remote cancelled state as converged, a paid state as authoritative, and an expired state as terminal.
 
