@@ -2,10 +2,10 @@
 
 ## Next.js and React
 
-- Use `@polypay/sdk/browser` only in client-side code.
-- Generate signed checkout parameters in a route handler or server action.
+- Use `@polypay/sdk/browser` only in client-side code to open a server-created `checkout_url`.
+- Create Hosted Checkout with a server-only API Key in a route handler or server action.
 - Keep API Key REST calls and `@polypay/sdk/x402` in server-only modules.
-- Use public environment-variable prefixes only for Public Keys, never API Keys.
+- Never place PolyPay payment credentials or order-creation parameters in public environment variables.
 - Trigger redirects from explicit user actions and preserve the app's localization and error boundaries.
 
 ## PHP and Laravel

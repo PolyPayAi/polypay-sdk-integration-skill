@@ -12,8 +12,8 @@ Give coding agents a production-oriented workflow for integrating [PolyPay](http
 
 The Skill inspects the target application's runtime, payment architecture, order model, and security boundary before selecting the smallest complete PolyPay integration. It helps an agent implement and verify:
 
-- Hosted Checkout with server-side API Keys or browser-safe Public Keys
-- JavaScript browser checkout and server-side REST integrations
+- Hosted Checkout created with server-side API Keys
+- JavaScript redirect/popup helpers for opaque checkout URLs and server-side REST integrations
 - PHP SDK checkout, order queries, Webhook verification, and x402
 - Signed, replay-resistant, idempotent Webhook processing
 - Sandbox checkout and reconciliation flows
@@ -63,7 +63,7 @@ secret exposure, unsigned callbacks, replay attacks, and duplicate fulfillment.
 The Skill instructs agents to:
 
 - keep API Keys and settlement credentials out of browsers, URLs, logs, and source control;
-- use server-generated signatures for browser checkout;
+- create Hosted Checkout on the server and expose only the opaque checkout URL to browsers;
 - treat verified Webhooks or authenticated server reconciliation as the payment source of truth;
 - reject expired or replayed callbacks and fulfill each order only once;
 - preserve PolyPay trade IDs and merchant order IDs;
@@ -103,7 +103,7 @@ The Agent loads only the references needed for the requested integration. When i
 
 它重点指导 Agent 完成：
 
-- 服务端密钥隔离与浏览器 Public Key 安全接入
+- 服务端创建 Hosted Checkout，浏览器只接收并打开不透明支付链接
 - Hosted Checkout、订单创建、跳转和服务端对账
 - Webhook 原始正文验签、时间窗口、防重放和幂等履约
 - Sandbox 验证以及成功、失败、过期、重复回调等测试

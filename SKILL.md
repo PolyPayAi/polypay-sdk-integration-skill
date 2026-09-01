@@ -17,16 +17,16 @@ Choose one primary mode:
 
 - When the user explicitly requests native Android or iOS pages, use the PolyPay native SDK for that platform. It renders payment-method selection and the payment page locally from a server-created `/pay/{tradeId}` checkout URL; do not substitute the React Native browser-opener package or a checkout WebView.
 - Use hosted checkout for normal customer payments. Let PolyPay own payment-method selection unless the merchant already knows both currency and network.
-- Use `@polypay/sdk/browser` for browser checkout with a Public Key and server-generated signed parameters.
+- Use `@polypay/sdk/browser` only to open an opaque Hosted Checkout URL created by the merchant server. Browser Public Key order creation, Session Tokens, signed parameter URLs, and client-side status queries have been removed.
 - Use `polypay/php-sdk` for PHP server-side hosted checkout, direct orders, status queries, webhook verification, and x402.
-- Use PolyPay's canonical merchant REST endpoints with a server-only API Key for ordinary Node.js order operations. Treat `/api/v1/pay/sdk/...` routes as legacy compatibility aliases rather than the default for new integrations. Do not initialize `PolyPayClient` with an API Key; that client is browser-only and accepts a Public Key.
+- Use PolyPay's canonical merchant REST endpoints with a server-only API Key for ordinary Node.js order operations. Treat `/api/v1/pay/sdk/...` routes as legacy compatibility aliases rather than the default for new integrations. `PolyPayClient` no longer exists; use `PolyPayCheckout` only for redirect or popup behavior.
 - Use `@polypay/sdk/x402` only for server-side JavaScript/TypeScript x402 resources.
 - Reuse the official platform plugin or its conventions for WordPress, WooCommerce, WHMCS, or Shopify.
 - Use PolyPay MCP when the user wants an AI client to operate merchant resources rather than embed checkout code.
 
 ## Load Only the Required References
 
-- Read [references/checkout.md](references/checkout.md) for hosted checkout, Public Key, API Key, direct-order, locale, and sandbox flows.
+- Read [references/checkout.md](references/checkout.md) for Hosted Checkout, API Key, browser redirect, direct-order, locale, and Sandbox flows.
 - Read [references/webhooks.md](references/webhooks.md) whenever payment state changes local data.
 - Read [references/x402.md](references/x402.md) for paid API or Agent resource requests.
 - Read [references/notifications.md](references/notifications.md) for channels, templates, delivery, or wallet events.
@@ -39,8 +39,8 @@ Read every reference relevant to the request before implementation. Do not load 
 
 - Keep API Keys in server-only secret storage. Never place them in browser code, mobile code, URLs, logs, examples with real values, or committed files.
 - Prefer API-key-independent Ed25519 Webhook v2 verification for new integrations. Keep legacy API Key HMAC verification only when preserving an existing integration, and never downgrade from failed v2 verification to v1.
-- Allow Public Keys in browser code only after the merchant configures the exact allowed domains.
-- Generate hosted-checkout signatures on a trusted server and pass signed parameters to the browser. Never invent or omit the required signature.
+- Create Hosted Checkout on a trusted merchant server and return only the opaque `checkout_url` to the browser. Keep the API Key, amount, order ID, callback URLs, and signing material off the client.
+- Reject or migrate code that uses `PolyPayClient`, `/api/v1/sdk/token`, browser Session Tokens, Public Key signed URLs, `buildHostedCheckoutUrl()`, or `redirectToHostedCheckout()`.
 - Treat verified webhooks or an authenticated server-side reconciliation query as the source of truth. Never mark an order paid from a redirect, popup close, client poll result alone, or Agent message.
 - Make webhook handling and fulfillment idempotent using stable event, trade, merchant-order, transaction, or nonce identifiers.
 - Use Sandbox first for checkout and order flows. Use mocks and protocol test vectors for x402 until the user explicitly authorizes a low-value production settlement. Do not perform a production charge, settlement, webhook resend, or external write without that authorization.

@@ -8,21 +8,21 @@ Use hosted checkout for the default customer-payment path.
 
 | Host | Normal checkout | Direct order |
 | --- | --- | --- |
-| Browser JavaScript | `@polypay/sdk/browser` with Public Key and signed parameters | `PolyPayClient` with Public Key and short-lived session token |
+| Browser JavaScript | `@polypay/sdk/browser` opens a server-created opaque `checkout_url` | Not supported; create orders on the merchant server |
 | PHP server | `polypay/php-sdk` `createCheckoutUrl()` | `createOrder()` |
 | Node.js server | PolyPay REST API with server-only API Key | PolyPay REST API with server-only API Key |
 
-Do not pass an API Key to `PolyPayClient`; it accepts `publicKey` and runs only in a browser. Use `@polypay/sdk/x402` only for Node.js x402 server routes.
+`PolyPayClient` and the browser order APIs were removed in JavaScript SDK 2.0. Use `@polypay/sdk/x402` only for Node.js x402 server routes.
 
 ## Implement Browser Hosted Checkout
 
-1. Generate or retrieve signed checkout parameters on a trusted server.
-2. Pass `publicKey`, `amount`, `timestamp`, `signature`, and stable `orderId` to the browser.
-3. Pass `notifyUrl` for server-to-server state updates and `redirectUrl` only for user navigation.
-4. Call `PolyPayCheckout.redirectToHostedCheckout()` from a user-triggered browser action.
-5. Omit currency and network to let PolyPay show payment-method selection. Include both only when already selected.
+1. Call `POST /api/v1/pay/order/checkout` on the merchant server with `X-API-Key`.
+2. Set amount, merchant order ID, callback URL, redirect URL, locale, and any preselected payment method on the server.
+3. Return only the opaque `checkout_url` to the browser.
+4. Call `PolyPayCheckout.redirect(checkoutUrl)` or `openModal(checkoutUrl)` from a user-triggered action.
+5. Confirm payment through a verified Webhook or authenticated server reconciliation.
 
-The JavaScript SDK requires `signature`; never substitute a placeholder in finished code. Its default URL is `https://checkout.polypay.ai/checkout`, which detects browser language and falls back to English. Pass an explicit locale only to pin `https://checkout.polypay.ai/{locale}/checkout`.
+Do not reconstruct, parse, modify, or persist secret-bearing parameters from the returned URL. The server API selects the locale; omitting it lets Hosted Checkout use the default language behavior.
 
 ## Implement Server API Key Checkout
 
@@ -48,7 +48,7 @@ Use `PolyPayAi/android-sdk` for Kotlin/Android and `PolyPayAi/ios-sdk` for Swift
 3. The SDK uses public checkout-scoped endpoints to read the placeholder, load enabled payment methods, submit the selected currency/network, display exact payment details, and observe confirmation state. Android uses server-locked wallet parameters to open compatible EVM wallets and provides explicit address/amount copy actions; iOS currently retains its address QR and copy flow.
 4. Android returns a `PolyPayCheckoutResult`; iOS emits a `PolyPayCheckoutOutcome`. Neither contract contains a `paid` outcome. Reconcile the trade ID on the merchant server before fulfillment.
 
-Do not use the browser Public Key/Origin token flow in a native app, expose an API Key, or accept arbitrary API/checkout hosts. Never invent a payment URI for an unsupported network: use explicit manual address, amount, and network copy actions until a compatible native signing integration exists.
+Do not use a browser token flow in a native app, expose an API Key, or accept arbitrary API/checkout hosts. Never invent a payment URI for an unsupported network: use explicit manual address, amount, and network copy actions until a compatible native signing integration exists.
 
 The canonical merchant business endpoints under `/api/v1/pay` accept either a merchant dashboard JWT or an API Key. Use `Authorization: Bearer <jwt>` for an interactive merchant dashboard session and `X-API-Key: <key>` for trusted server automation. Account identity and security operations remain JWT-only. The explicit `/api/v1/pay/sdk/...` API Key routes are legacy compatibility aliases; preserve them in existing integrations, but do not select them for new integrations when a canonical merchant endpoint exists.
 
@@ -74,7 +74,7 @@ PolyPay allocates an exact receiving wallet and payable amount to a pending orde
 - Cancel an unpaid order through the API, then create another same-currency, same-network, same-amount order and verify that the cancelled order does not leave a stale allocation that changes the new payable amount.
 - Never copy a Sandbox key into browser code.
 
-Browser Public Key Mode is intended for production checkout. Prefer API Key Sandbox flows for repeatable integration tests.
+Browser checkout uses the same server-created API Key flow in Sandbox and Production; the API Key environment selects the target.
 
 ## Production Gates
 
